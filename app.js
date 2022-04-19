@@ -46,12 +46,13 @@ function getNagiosServices() {
             Promise.all(promises).then( (data) => {
                 let servicesData = [];
                 let service = {};
+                console.log(data);
                 data.map( (el) => {
                     service[el.data.service.description] = {};
                     service[el.data.service.description].description = el.data.service.description;
                     service[el.data.service.description].plugin_output = el.data.service.plugin_output;
                     service[el.data.service.description].status = el.data.service.status;
-                    service[el.data.service.description].last_check = el.data.service.last_check;
+                    service[el.data.service.description].last_check = new Date(el.data.service.last_check).toLocaleString("ru-RU");
                     servicesData[el.data.service["host_name"]] = service;
                 });
                 resolve(servicesData);
@@ -157,7 +158,7 @@ function renderUI(servicesInfo) {
                 backgroundColor:
                     theme.palette.mode === 'dark'
                     ? 'rgba(255, 255, 255, .05)'
-                    : 'rgba(0, 0, 0, .03)',
+                    : '#D9EFF9',
                 '& .AccordionSummary-expandIconWrapper.Mui-expanded': {
                     transform: 'rotate(90deg)',
                 },
@@ -181,9 +182,27 @@ function renderUI(servicesInfo) {
             )) ( ({ theme }) => ({
         }));
         
-        const StringTypography = styled((props) => (
-            <Typography sx={{ color: 'text.secondary' }} {...props} />
-            )) ( ({ theme }) => ({
+        const StringTypography = styled((props) => {
+            let bgColor;
+            switch (props.status) {
+                // OK
+                case 2:
+                    break;
+                // WARNING
+                case 4:
+                    bgColor = "#ffd993";
+                    break;
+                // CRITICAL
+                case 16:
+                    bgColor = "#ffabaf";
+                    break;
+                default:
+                    break;
+            }
+            return (
+                <Typography sx={{ color: 'text.secondary', backgroundColor: bgColor}} {...props} />
+            )
+        })( ({ theme }) => ({
         }));
         
         
@@ -205,29 +224,12 @@ function renderUI(servicesInfo) {
             for ( let service_index in servicesInfo[host]) {
                 servicesDetails.push(
                     <MuiAccordionDetails key={host + service_index}>
-                        <StringTypography>
-                            {service_index}: <br></br>
+                        <StringTypography status={servicesInfo[host][service_index].status}>
+                            {service_index} [{servicesInfo[host][service_index].last_check}]:<br></br>
                             {servicesInfo[host][service_index].plugin_output} 
                         </StringTypography>
                     </MuiAccordionDetails>
                 )
-
-                // status
-                // switch (servicesInfo[host][service_index]["status"]) {
-                //     case 2:
-                //         status_el.classList.add("ok");
-                //         status_span.textContent = "ok";
-                //     break;
-                //     case 4:
-                //         status_el.classList.add("warning");
-                //         status_span.textContent = "warning";
-                //     break;
-                //     case 16:
-                //         status_el.classList.add("critical");
-                //         status_span.textContent = "critical";
-                //     break;
-                // }
-
             }
             servicesMain.push(
                 <MuiAccordion key={host} expanded={expanded === 'panel' + count} onChange={handleChange('panel' + count)}>
